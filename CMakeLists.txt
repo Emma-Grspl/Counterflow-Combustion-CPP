@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+
 # ============================================================
 # Core numerical library
 # ============================================================
@@ -27,6 +29,12 @@ target_include_directories(
     counterflow_core
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    counterflow_core
+    PUBLIC
+    Eigen3::Eigen
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
