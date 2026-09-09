@@ -11,9 +11,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ============================================================
+# Core numerical library
+# ============================================================
+
 add_library(
     counterflow_core
     src/Grid.cpp
+    src/BoundaryConditions.cpp
 )
 
 target_include_directories(
@@ -32,6 +37,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     )
 endif()
 
+# ============================================================
+# Main executable
+# ============================================================
+
 add_executable(
     counterflow_combustion
     src/main.cpp
@@ -42,6 +51,10 @@ target_link_libraries(
     PRIVATE
     counterflow_core
 )
+
+# ============================================================
+# Tests
+# ============================================================
 
 enable_testing()
 
@@ -59,4 +72,36 @@ target_link_libraries(
 add_test(
     NAME config
     COMMAND test_config
+)
+
+add_executable(
+    test_grid
+    tests/test_grid.cpp
+)
+
+target_link_libraries(
+    test_grid
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME grid
+    COMMAND test_grid
+)
+
+add_executable(
+    test_boundary_conditions
+    tests/test_boundary_conditions.cpp
+)
+
+target_link_libraries(
+    test_boundary_conditions
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME boundary_conditions
+    COMMAND test_boundary_conditions
 )
