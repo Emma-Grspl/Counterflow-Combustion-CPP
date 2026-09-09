@@ -25,6 +25,7 @@ add_library(
     src/PressurePoisson.cpp
     src/Transport.cpp
     src/Combustion.cpp
+    src/ReactiveTransport.cpp
 )
 
 target_include_directories(
@@ -182,4 +183,21 @@ target_link_libraries(
 add_test(
     NAME combustion
     COMMAND test_combustion
+)
+
+
+add_executable(
+    test_reactive_transport
+    tests/test_reactive_transport.cpp
+)
+
+target_link_libraries(
+    test_reactive_transport
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME reactive_transport
+    COMMAND test_reactive_transport
 )
