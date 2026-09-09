@@ -1,6 +1,7 @@
 #pragma once
 
 #include "counterflow/Grid.hpp"
+#include "counterflow/PressurePoisson.hpp"
 
 namespace counterflow
 {
@@ -25,5 +26,40 @@ void correct_velocity(
     double rho,
     double dt
 );
+
+
+class NavierStokesStepper
+{
+public:
+    NavierStokesStepper(
+        const Grid2D& grid,
+        double rho,
+        double nu,
+        double dt
+    );
+
+    void advance(
+        const Field2D& u_old,
+        const Field2D& v_old,
+        Field2D& u_new,
+        Field2D& v_new,
+        Field2D& pressure,
+        const Grid2D& grid
+    );
+
+private:
+    std::size_t nx_;
+    std::size_t ny_;
+
+    double rho_;
+    double nu_;
+    double dt_;
+
+    Field2D u_star_;
+    Field2D v_star_;
+    Field2D pressure_rhs_;
+
+    PressurePoissonSolver pressure_solver_;
+};
 
 } // namespace counterflow

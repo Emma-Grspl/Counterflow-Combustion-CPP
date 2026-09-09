@@ -210,4 +210,96 @@ void correct_velocity(
     }
 }
 
+
+NavierStokesStepper::NavierStokesStepper(
+    const Grid2D& grid,
+    double rho,
+    double nu,
+    double dt
+)
+    : nx_(grid.nx),
+      ny_(grid.ny),
+      rho_(rho),
+      nu_(nu),
+      dt_(dt),
+      u_star_(grid.nx, grid.ny, 0.0),
+      v_star_(grid.nx, grid.ny, 0.0),
+      pressure_rhs_(grid.nx, grid.ny, 0.0),
+      pressure_solver_(grid)
+{
+    if (rho_ <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Density must be strictly positive."
+        );
+    }
+
+    if (nu_ < 0.0)
+    {
+        throw std::invalid_argument(
+            "Kinematic viscosity cannot be negative."
+        );
+    }
+
+    if (dt_ <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Time step must be strictly positive."
+        );
+    }
+}
+
+
+void NavierStokesStepper::advance(
+    const Field2D& u_old,
+    const Field2D& v_old,
+    Field2D& u_new,
+    Field2D& v_new,
+    Field2D& pressure,
+    const Grid2D& grid
+)
+{
+    if (grid.nx != nx_ || grid.ny != ny_)
+    {
+        throw std::invalid_argument(
+            "Grid dimensions do not match the Navier-Stokes stepper."
+        );
+    }
+
+    compute_intermediate_velocity(
+        u_old,
+        v_old,
+        u_star_,
+        v_star_,
+        grid,
+        dt_,
+        nu_
+    );
+
+    compute_pressure_rhs(
+        u_star_,
+        v_star_,
+        pressure_rhs_,
+        grid,
+        rho_,
+        dt_
+    );
+
+    pressure_solver_.solve(
+        pressure_rhs_,
+        pressure
+    );
+
+    correct_velocity(
+        u_star_,
+        v_star_,
+        pressure,
+        u_new,
+        v_new,
+        grid,
+        rho_,
+        dt_
+    );
+}
+
 } // namespace counterflow

@@ -218,5 +218,98 @@ int main()
         return 1;
     }
 
+
+    // ========================================================
+    // Test 3: complete fractional step
+    // ========================================================
+
+    counterflow::Field2D step_u_old(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D step_v_old(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D step_u_new(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D step_v_new(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D step_pressure(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    // Uniform velocity field.
+    //
+    // All spatial derivatives vanish, therefore:
+    //
+    // predictor        -> unchanged
+    // pressure RHS     -> zero
+    // pressure         -> zero
+    // correction       -> unchanged
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            step_u_old(i, j) = 1.5;
+            step_v_old(i, j) = -0.5;
+        }
+    }
+
+    counterflow::NavierStokesStepper stepper(
+        grid,
+        1.0,
+        0.01,
+        0.1
+    );
+
+    stepper.advance(
+        step_u_old,
+        step_v_old,
+        step_u_new,
+        step_v_new,
+        step_pressure,
+        grid
+    );
+
+    if (!approximately_equal(
+            step_u_new(2, 2),
+            1.5,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Complete step modified uniform u velocity.\n";
+
+        return 1;
+    }
+
+    if (!approximately_equal(
+            step_v_new(2, 2),
+            -0.5,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Complete step modified uniform v velocity.\n";
+
+        return 1;
+    }
+
     return 0;
 }
