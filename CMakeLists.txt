@@ -19,6 +19,7 @@ add_library(
     counterflow_core
     src/Grid.cpp
     src/BoundaryConditions.cpp
+    src/NavierStokes.cpp
 )
 
 target_include_directories(
@@ -104,4 +105,20 @@ target_link_libraries(
 add_test(
     NAME boundary_conditions
     COMMAND test_boundary_conditions
+)
+
+add_executable(
+    test_navier_stokes
+    tests/test_navier_stokes.cpp
+)
+
+target_link_libraries(
+    test_navier_stokes
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME navier_stokes
+    COMMAND test_navier_stokes
 )
