@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace counterflow
 {
 
@@ -20,6 +22,13 @@ struct ReactiveState
     double h2o;
     double co2;
     double temperature;
+};
+
+
+struct ChemicalSubcycling
+{
+    std::size_t substeps;
+    double chemical_dt;
 };
 
 
@@ -64,6 +73,14 @@ ReactiveState advance_reaction_state(
     double density,
     double heat_capacity,
     double dt
+);
+
+
+[[nodiscard]]
+ChemicalSubcycling compute_chemical_subcycling(
+    double hydro_dt,
+    double maximum_temperature,
+    double density
 );
 
 } // namespace counterflow

@@ -1,5 +1,6 @@
 #include "counterflow/Combustion.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
@@ -143,6 +144,70 @@ ReactiveState advance_reaction_state(
             + dt
             * rates.heat_release
             / (density * heat_capacity)
+    };
+}
+
+
+ChemicalSubcycling compute_chemical_subcycling(
+    double hydro_dt,
+    double maximum_temperature,
+    double density
+)
+{
+    if (hydro_dt <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Hydrodynamic time step must be strictly positive."
+        );
+    }
+
+    if (maximum_temperature <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Maximum temperature must be strictly positive."
+        );
+    }
+
+    if (density <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Density must be strictly positive."
+        );
+    }
+
+    const double q_max =
+        MethaneChemistry::pre_exponential_factor
+        * (
+            density * 0.5
+            / MethaneChemistry::molar_mass_ch4
+        )
+        * std::pow(
+            density * 0.1
+            / MethaneChemistry::molar_mass_o2,
+            2.0
+        )
+        * std::exp(
+            -MethaneChemistry::activation_temperature
+            / maximum_temperature
+        );
+
+    const double target_chemical_dt =
+        1.0e3 / (10.0 * q_max);
+
+    const double required_substeps =
+        hydro_dt / target_chemical_dt;
+
+    const std::size_t substeps =
+        std::max<std::size_t>(
+            1,
+            static_cast<std::size_t>(
+                std::ceil(required_substeps)
+            )
+        );
+
+    return {
+        substeps,
+        hydro_dt / static_cast<double>(substeps)
     };
 }
 

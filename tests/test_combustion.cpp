@@ -154,5 +154,61 @@ int main()
         return 1;
     }
 
+
+    // ========================================================
+    // Test 3: chemical subcycling
+    // ========================================================
+
+    const double hydro_dt = 1.0e-4;
+
+    const counterflow::ChemicalSubcycling subcycling =
+        counterflow::compute_chemical_subcycling(
+            hydro_dt,
+            1500.0,
+            density
+        );
+
+    if (subcycling.substeps < 1)
+    {
+        std::cerr
+            << "Chemical substep count must be positive.\n";
+
+        return 1;
+    }
+
+    if (!(subcycling.chemical_dt > 0.0))
+    {
+        std::cerr
+            << "Chemical time step must be positive.\n";
+
+        return 1;
+    }
+
+    const double reconstructed_hydro_dt =
+        static_cast<double>(subcycling.substeps)
+        * subcycling.chemical_dt;
+
+    if (!approximately_equal(
+            reconstructed_hydro_dt,
+            hydro_dt,
+            1.0e-14
+        ))
+    {
+        std::cerr
+            << "Chemical substeps do not exactly cover "
+               "the hydrodynamic time step.\n";
+
+        return 1;
+    }
+
+    if (subcycling.chemical_dt > hydro_dt)
+    {
+        std::cerr
+            << "Chemical time step cannot exceed "
+               "hydrodynamic time step.\n";
+
+        return 1;
+    }
+
     return 0;
 }
