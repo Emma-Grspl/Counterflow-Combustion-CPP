@@ -20,6 +20,7 @@ add_library(
     src/Grid.cpp
     src/BoundaryConditions.cpp
     src/NavierStokes.cpp
+    src/PressurePoisson.cpp
 )
 
 target_include_directories(
@@ -121,4 +122,20 @@ target_link_libraries(
 add_test(
     NAME navier_stokes
     COMMAND test_navier_stokes
+)
+
+add_executable(
+    test_pressure_poisson
+    tests/test_pressure_poisson.cpp
+)
+
+target_link_libraries(
+    test_pressure_poisson
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME pressure_poisson
+    COMMAND test_pressure_poisson
 )
