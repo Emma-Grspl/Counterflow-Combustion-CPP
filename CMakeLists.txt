@@ -24,6 +24,7 @@ add_library(
     src/NavierStokes.cpp
     src/PressurePoisson.cpp
     src/Transport.cpp
+    src/Combustion.cpp
 )
 
 target_include_directories(
@@ -164,4 +165,21 @@ target_link_libraries(
 add_test(
     NAME transport
     COMMAND test_transport
+)
+
+
+add_executable(
+    test_combustion
+    tests/test_combustion.cpp
+)
+
+target_link_libraries(
+    test_combustion
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME combustion
+    COMMAND test_combustion
 )
