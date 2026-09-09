@@ -31,3 +31,31 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         -Wpedantic
     )
 endif()
+
+enable_testing()
+
+add_executable(
+    test_config
+    tests/test_config.cpp
+)
+
+target_include_directories(
+    test_config
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        test_config
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
+
+add_test(
+    NAME config
+    COMMAND test_config
+)
