@@ -8,6 +8,15 @@
 namespace counterflow
 {
 
+void initialize_reactive_fields(
+    Field2D& ch4,
+    Field2D& o2,
+    Field2D& h2o,
+    Field2D& co2,
+    Field2D& temperature,
+    const Grid2D& grid
+);
+
 void apply_reactive_boundary_conditions(
     Field2D& ch4,
     Field2D& o2,
@@ -55,6 +64,7 @@ private:
     double density_;
     double heat_capacity_;
     double diffusivity_;
+    double hydro_dt_;
 
     ChemicalSubcycling subcycling_;
 

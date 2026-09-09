@@ -9,6 +9,82 @@
 namespace counterflow
 {
 
+void initialize_reactive_fields(
+    Field2D& ch4,
+    Field2D& o2,
+    Field2D& h2o,
+    Field2D& co2,
+    Field2D& temperature,
+    const Grid2D& grid
+)
+{
+    const bool dimensions_match =
+        ch4.nx() == grid.nx &&
+        ch4.ny() == grid.ny &&
+        o2.nx() == grid.nx &&
+        o2.ny() == grid.ny &&
+        h2o.nx() == grid.nx &&
+        h2o.ny() == grid.ny &&
+        co2.nx() == grid.nx &&
+        co2.ny() == grid.ny &&
+        temperature.nx() == grid.nx &&
+        temperature.ny() == grid.ny;
+
+    if (!dimensions_match)
+    {
+        throw std::invalid_argument(
+            "Reactive fields must match the grid."
+        );
+    }
+
+    const std::size_t first_quarter =
+        grid.nx / 4;
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            ch4(i, j) = 0.0;
+            o2(i, j) = 0.0;
+            h2o(i, j) = 0.0;
+            co2(i, j) = 0.0;
+
+            const std::size_t k =
+                grid.index(i, j);
+
+            const double y =
+                grid.y[k];
+
+            if (y >= 0.00075 &&
+                y < 0.00125)
+            {
+                temperature(i, j) = 1000.0;
+            }
+            else
+            {
+                temperature(i, j) = 300.0;
+            }
+        }
+    }
+
+    // Oxygen inlet: bottom boundary.
+    for (std::size_t i = 0;
+         i < first_quarter;
+         ++i)
+    {
+        o2(i, 0) = 0.21;
+    }
+
+    // Methane inlet: top boundary.
+    for (std::size_t i = 0;
+         i < first_quarter;
+         ++i)
+    {
+        ch4(i, grid.ny - 1) = 1.0;
+    }
+}
+
+
 void apply_reactive_boundary_conditions(
     Field2D& ch4,
     Field2D& o2,
@@ -130,6 +206,7 @@ ReactiveTransportStepper::ReactiveTransportStepper(
       density_(density),
       heat_capacity_(heat_capacity),
       diffusivity_(diffusivity),
+      hydro_dt_(hydro_dt),
       subcycling_(
           compute_chemical_subcycling(
               hydro_dt,
@@ -202,6 +279,28 @@ void ReactiveTransportStepper::advance(
             "Reactive transport fields must match the grid."
         );
     }
+
+    double maximum_temperature =
+        temperature(0, 0);
+
+    for (std::size_t j = 0; j < ny_; ++j)
+    {
+        for (std::size_t i = 0; i < nx_; ++i)
+        {
+            maximum_temperature =
+                std::max(
+                    maximum_temperature,
+                    temperature(i, j)
+                );
+        }
+    }
+
+    subcycling_ =
+        compute_chemical_subcycling(
+            hydro_dt_,
+            maximum_temperature,
+            density_
+        );
 
     for (std::size_t substep = 0;
          substep < subcycling_.substeps;

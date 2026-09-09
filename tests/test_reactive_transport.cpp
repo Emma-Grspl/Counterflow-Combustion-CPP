@@ -65,6 +65,58 @@ int main()
         0.0
     );
 
+
+    // ========================================================
+    // Test 1: physical initialization
+    // ========================================================
+
+    counterflow::initialize_reactive_fields(
+        ch4,
+        o2,
+        h2o,
+        co2,
+        temperature,
+        grid
+    );
+
+    if (!approximately_equal(
+            o2(0, 0),
+            0.21,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Incorrect initial oxygen inlet.\n";
+
+        return 1;
+    }
+
+    if (!approximately_equal(
+            ch4(0, grid.ny - 1),
+            1.0,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Incorrect initial methane inlet.\n";
+
+        return 1;
+    }
+
+    // Reset to a homogeneous reacting state for the
+    // reactive-step test below.
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            ch4(i, j) = 0.5;
+            o2(i, j) = 0.1;
+            h2o(i, j) = 0.0;
+            co2(i, j) = 0.0;
+            temperature(i, j) = 1000.0;
+        }
+    }
+
     const double density = 1.1614;
     const double heat_capacity = 1200.0;
 
@@ -89,6 +141,9 @@ int main()
 
         return 1;
     }
+
+    const std::size_t initial_substeps =
+        stepper.substeps();
 
     const double ch4_before =
         ch4(2, 2);
@@ -153,6 +208,15 @@ int main()
     {
         std::cerr
             << "Temperature did not increase.\n";
+
+        return 1;
+    }
+
+    if (stepper.substeps() < initial_substeps)
+    {
+        std::cerr
+            << "Adaptive chemical subcycling unexpectedly "
+               "reduced the number of substeps.\n";
 
         return 1;
     }
