@@ -118,4 +118,96 @@ void compute_intermediate_velocity(
     }
 }
 
+
+void correct_velocity(
+    const Field2D& u_star,
+    const Field2D& v_star,
+    const Field2D& pressure,
+    Field2D& u_new,
+    Field2D& v_new,
+    const Grid2D& grid,
+    double rho,
+    double dt
+)
+{
+    const bool dimensions_match =
+        u_star.nx() == grid.nx &&
+        u_star.ny() == grid.ny &&
+        v_star.nx() == grid.nx &&
+        v_star.ny() == grid.ny &&
+        pressure.nx() == grid.nx &&
+        pressure.ny() == grid.ny &&
+        u_new.nx() == grid.nx &&
+        u_new.ny() == grid.ny &&
+        v_new.nx() == grid.nx &&
+        v_new.ny() == grid.ny;
+
+    if (!dimensions_match)
+    {
+        throw std::invalid_argument(
+            "Velocity correction fields must match the grid."
+        );
+    }
+
+    if (rho <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Density must be strictly positive."
+        );
+    }
+
+    if (dt <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Time step must be strictly positive."
+        );
+    }
+
+    const double pressure_scale =
+        dt / rho;
+
+    const double inv_2dx =
+        1.0 / (2.0 * grid.dx);
+
+    const double inv_2dy =
+        1.0 / (2.0 * grid.dy);
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            const bool boundary =
+                i == 0 ||
+                i == grid.nx - 1 ||
+                j == 0 ||
+                j == grid.ny - 1;
+
+            if (boundary)
+            {
+                u_new(i, j) = u_star(i, j);
+                v_new(i, j) = v_star(i, j);
+                continue;
+            }
+
+            const double dp_dx =
+                (pressure(i + 1, j)
+                 - pressure(i - 1, j))
+                * inv_2dx;
+
+            const double dp_dy =
+                (pressure(i, j + 1)
+                 - pressure(i, j - 1))
+                * inv_2dy;
+
+            u_new(i, j) =
+                u_star(i, j)
+                - pressure_scale * dp_dx;
+
+            v_new(i, j) =
+                v_star(i, j)
+                - pressure_scale * dp_dy;
+        }
+    }
+}
+
 } // namespace counterflow

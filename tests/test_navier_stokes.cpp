@@ -18,6 +18,10 @@ int main()
         5
     );
 
+    // ========================================================
+    // Test 1: predictor step
+    // ========================================================
+
     counterflow::Field2D u_old(
         grid.nx,
         grid.ny,
@@ -42,23 +46,18 @@ int main()
         0.0
     );
 
-    // Analytical test field:
-    //
     // u(x,y) = x
     // v(x,y) = 0
-    //
-    // Therefore:
-    // du/dx = 1
-    // du/dy = 0
-    // Laplacian(u) = 0
 
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         for (std::size_t i = 0; i < grid.nx; ++i)
         {
-            const std::size_t k = grid.index(i, j);
+            const std::size_t k =
+                grid.index(i, j);
 
-            u_old(i, j) = grid.x[k];
+            u_old(i, j) =
+                grid.x[k];
         }
     }
 
@@ -77,13 +76,11 @@ int main()
 
     // At the center:
     //
-    // x = 0.5
     // u = 0.5
     // du/dx = 1
+    // Laplacian(u) = 0
     //
-    // u* = u - dt * u * du/dx
-    //    = 0.5 - 0.1 * 0.5
-    //    = 0.45
+    // u* = 0.5 - 0.1 * 0.5 = 0.45
 
     if (!approximately_equal(
             u_star(2, 2),
@@ -111,16 +108,112 @@ int main()
         return 1;
     }
 
-    // Boundary values must be copied unchanged.
+    // ========================================================
+    // Test 2: pressure correction
+    // ========================================================
+
+    counterflow::Field2D pressure(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D corrected_u(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D corrected_v(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    // Manufactured pressure:
+    //
+    // p(x,y) = 2x + 3y
+    //
+    // therefore:
+    //
+    // dp/dx = 2
+    // dp/dy = 3
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            const std::size_t k =
+                grid.index(i, j);
+
+            pressure(i, j) =
+                2.0 * grid.x[k]
+                + 3.0 * grid.y[k];
+
+            // Use simple constant intermediate velocities
+            // for this independent test.
+            u_star(i, j) = 10.0;
+            v_star(i, j) = 20.0;
+        }
+    }
+
+    const double rho = 2.0;
+    const double correction_dt = 0.1;
+
+    counterflow::correct_velocity(
+        u_star,
+        v_star,
+        pressure,
+        corrected_u,
+        corrected_v,
+        grid,
+        rho,
+        correction_dt
+    );
+
+    // dt / rho = 0.05
+    //
+    // u_new = 10 - 0.05 * 2 = 9.9
+    // v_new = 20 - 0.05 * 3 = 19.85
 
     if (!approximately_equal(
-            u_star(0, 2),
-            u_old(0, 2),
+            corrected_u(2, 2),
+            9.9,
             1.0e-12
         ))
     {
         std::cerr
-            << "Boundary velocity was not preserved.\n";
+            << "Unexpected corrected u velocity: "
+            << corrected_u(2, 2)
+            << '\n';
+
+        return 1;
+    }
+
+    if (!approximately_equal(
+            corrected_v(2, 2),
+            19.85,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Unexpected corrected v velocity: "
+            << corrected_v(2, 2)
+            << '\n';
+
+        return 1;
+    }
+
+    // Boundary values must remain equal to u_star/v_star.
+
+    if (!approximately_equal(
+            corrected_u(0, 2),
+            10.0,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Boundary u velocity was modified.\n";
 
         return 1;
     }
