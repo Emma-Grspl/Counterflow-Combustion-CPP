@@ -13,6 +13,16 @@ struct ReactionRates
 };
 
 
+struct ReactiveState
+{
+    double ch4;
+    double o2;
+    double h2o;
+    double co2;
+    double temperature;
+};
+
+
 struct MethaneChemistry
 {
     // Arrhenius parameters
@@ -45,6 +55,15 @@ ReactionRates compute_methane_reaction_rates(
     double y_o2,
     double temperature,
     double density
+);
+
+
+[[nodiscard]]
+ReactiveState advance_reaction_state(
+    const ReactiveState& state,
+    double density,
+    double heat_capacity,
+    double dt
 );
 
 } // namespace counterflow

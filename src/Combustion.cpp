@@ -96,4 +96,54 @@ ReactionRates compute_methane_reaction_rates(
     };
 }
 
+
+ReactiveState advance_reaction_state(
+    const ReactiveState& state,
+    double density,
+    double heat_capacity,
+    double dt
+)
+{
+    if (heat_capacity <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Heat capacity must be strictly positive."
+        );
+    }
+
+    if (dt <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Chemical time step must be strictly positive."
+        );
+    }
+
+    const ReactionRates rates =
+        compute_methane_reaction_rates(
+            state.ch4,
+            state.o2,
+            state.temperature,
+            density
+        );
+
+    return {
+        state.ch4
+            + dt * rates.ch4 / density,
+
+        state.o2
+            + dt * rates.o2 / density,
+
+        state.h2o
+            + dt * rates.h2o / density,
+
+        state.co2
+            + dt * rates.co2 / density,
+
+        state.temperature
+            + dt
+            * rates.heat_release
+            / (density * heat_capacity)
+    };
+}
+
 } // namespace counterflow

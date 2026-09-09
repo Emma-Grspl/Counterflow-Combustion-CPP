@@ -74,5 +74,85 @@ int main()
         return 1;
     }
 
+
+    // ========================================================
+    // Test 2: local chemical time step
+    // ========================================================
+
+    const counterflow::ReactiveState state{
+        0.5,    // CH4
+        0.1,    // O2
+        0.0,    // H2O
+        0.0,    // CO2
+        1000.0  // Temperature [K]
+    };
+
+    const double heat_capacity = 1200.0;
+    const double chemical_dt = 1.0e-8;
+
+    const counterflow::ReactiveState new_state =
+        counterflow::advance_reaction_state(
+            state,
+            density,
+            heat_capacity,
+            chemical_dt
+        );
+
+    // Reactants decrease.
+    if (!(new_state.ch4 < state.ch4))
+    {
+        std::cerr
+            << "CH4 did not decrease during reaction.\n";
+
+        return 1;
+    }
+
+    if (!(new_state.o2 < state.o2))
+    {
+        std::cerr
+            << "O2 did not decrease during reaction.\n";
+
+        return 1;
+    }
+
+    // Products increase.
+    if (!(new_state.h2o > state.h2o))
+    {
+        std::cerr
+            << "H2O did not increase during reaction.\n";
+
+        return 1;
+    }
+
+    if (!(new_state.co2 > state.co2))
+    {
+        std::cerr
+            << "CO2 did not increase during reaction.\n";
+
+        return 1;
+    }
+
+    // Exothermic reaction raises temperature.
+    if (!(new_state.temperature > state.temperature))
+    {
+        std::cerr
+            << "Temperature did not increase during reaction.\n";
+
+        return 1;
+    }
+
+    // The original state must remain unchanged.
+    if (!approximately_equal(
+            state.ch4,
+            0.5,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Input reactive state was modified.\n";
+
+        return 1;
+    }
+
     return 0;
 }
