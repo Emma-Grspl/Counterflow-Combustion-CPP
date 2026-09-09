@@ -23,6 +23,7 @@ add_library(
     src/BoundaryConditions.cpp
     src/NavierStokes.cpp
     src/PressurePoisson.cpp
+    src/Transport.cpp
 )
 
 target_include_directories(
@@ -146,4 +147,21 @@ target_link_libraries(
 add_test(
     NAME pressure_poisson
     COMMAND test_pressure_poisson
+)
+
+
+add_executable(
+    test_transport
+    tests/test_transport.cpp
+)
+
+target_link_libraries(
+    test_transport
+    PRIVATE
+    counterflow_core
+)
+
+add_test(
+    NAME transport
+    COMMAND test_transport
 )
