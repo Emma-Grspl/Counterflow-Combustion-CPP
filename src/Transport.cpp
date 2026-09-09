@@ -59,7 +59,6 @@ void apply_nitrogen_boundary_conditions(
     const std::size_t half =
         grid.nx / 2;
 
-    // Bottom and top: zero-gradient by default.
     for (std::size_t i = 0; i < grid.nx; ++i)
     {
         nitrogen(i, 0) =
@@ -68,7 +67,6 @@ void apply_nitrogen_boundary_conditions(
         nitrogen(i, grid.ny - 1) =
             nitrogen(i, grid.ny - 2);
 
-        // Imposed inlet compositions.
         if (i < first_quarter)
         {
             nitrogen(i, 0) = 0.79;
@@ -80,7 +78,6 @@ void apply_nitrogen_boundary_conditions(
         }
     }
 
-    // Left and right: zero-gradient.
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         nitrogen(0, j) =
@@ -92,21 +89,21 @@ void apply_nitrogen_boundary_conditions(
 }
 
 
-void advance_species_transport(
-    const Field2D& species_old,
+void advance_scalar_transport(
+    const Field2D& scalar_old,
     const Field2D& u,
     const Field2D& v,
-    Field2D& species_new,
+    Field2D& scalar_new,
     const Grid2D& grid,
     double diffusivity,
     double dt
 )
 {
     const bool dimensions_match =
-        species_old.nx() == grid.nx &&
-        species_old.ny() == grid.ny &&
-        species_new.nx() == grid.nx &&
-        species_new.ny() == grid.ny &&
+        scalar_old.nx() == grid.nx &&
+        scalar_old.ny() == grid.ny &&
+        scalar_new.nx() == grid.nx &&
+        scalar_new.ny() == grid.ny &&
         u.nx() == grid.nx &&
         u.ny() == grid.ny &&
         v.nx() == grid.nx &&
@@ -115,7 +112,7 @@ void advance_species_transport(
     if (!dimensions_match)
     {
         throw std::invalid_argument(
-            "Species transport fields must match the grid."
+            "Scalar transport fields must match the grid."
         );
     }
 
@@ -145,54 +142,74 @@ void advance_species_transport(
     const double inv_dy2 =
         1.0 / (grid.dy * grid.dy);
 
-    // Preserve the current field first.
+    // Preserve boundaries before updating the interior.
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         for (std::size_t i = 0; i < grid.nx; ++i)
         {
-            species_new(i, j) =
-                species_old(i, j);
+            scalar_new(i, j) =
+                scalar_old(i, j);
         }
     }
 
-    // Explicit centered advection-diffusion update.
     for (std::size_t j = 1; j < grid.ny - 1; ++j)
     {
         for (std::size_t i = 1; i < grid.nx - 1; ++i)
         {
-            const double dY_dx =
-                (species_old(i + 1, j)
-                 - species_old(i - 1, j))
+            const double dphi_dx =
+                (scalar_old(i + 1, j)
+                 - scalar_old(i - 1, j))
                 * inv_2dx;
 
-            const double dY_dy =
-                (species_old(i, j + 1)
-                 - species_old(i, j - 1))
+            const double dphi_dy =
+                (scalar_old(i, j + 1)
+                 - scalar_old(i, j - 1))
                 * inv_2dy;
 
             const double laplacian =
-                (species_old(i + 1, j)
-                 - 2.0 * species_old(i, j)
-                 + species_old(i - 1, j))
+                (scalar_old(i + 1, j)
+                 - 2.0 * scalar_old(i, j)
+                 + scalar_old(i - 1, j))
                 * inv_dx2
                 +
-                (species_old(i, j + 1)
-                 - 2.0 * species_old(i, j)
-                 + species_old(i, j - 1))
+                (scalar_old(i, j + 1)
+                 - 2.0 * scalar_old(i, j)
+                 + scalar_old(i, j - 1))
                 * inv_dy2;
 
             const double advection =
-                u(i, j) * dY_dx
-                + v(i, j) * dY_dy;
+                u(i, j) * dphi_dx
+                + v(i, j) * dphi_dy;
 
-            species_new(i, j) =
-                species_old(i, j)
+            scalar_new(i, j) =
+                scalar_old(i, j)
                 - dt * advection
                 + diffusivity * dt * laplacian;
         }
     }
+}
 
-    // Physical mass fractions must remain in [0, 1].
+
+void advance_species_transport(
+    const Field2D& species_old,
+    const Field2D& u,
+    const Field2D& v,
+    Field2D& species_new,
+    const Grid2D& grid,
+    double diffusivity,
+    double dt
+)
+{
+    advance_scalar_transport(
+        species_old,
+        u,
+        v,
+        species_new,
+        grid,
+        diffusivity,
+        dt
+    );
+
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         for (std::size_t i = 0; i < grid.nx; ++i)

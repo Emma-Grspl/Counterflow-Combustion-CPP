@@ -151,5 +151,85 @@ int main()
         return 1;
     }
 
+
+    // ========================================================
+    // Test 3: generic scalar transport
+    // ========================================================
+
+    counterflow::Field2D temperature_old(
+        grid.nx,
+        grid.ny,
+        300.0
+    );
+
+    counterflow::Field2D temperature_new(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    // T(x,y) = 300 + 100 x
+    //
+    // dT/dx = 100
+    // dT/dy = 0
+    // Laplacian(T) = 0
+    //
+    // with u = 1:
+    //
+    // T_new = T_old - dt * 100
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            const std::size_t k =
+                grid.index(i, j);
+
+            temperature_old(i, j) =
+                300.0
+                + 100.0 * grid.x[k];
+        }
+    }
+
+    counterflow::advance_scalar_transport(
+        temperature_old,
+        u,
+        v,
+        temperature_new,
+        grid,
+        diffusivity,
+        dt
+    );
+
+    // At x = 0.5:
+    //
+    // T_old = 350 K
+    // T_new = 350 - 10 = 340 K
+
+    if (!approximately_equal(
+            temperature_new(2, 2),
+            340.0,
+            1.0e-10
+        ))
+    {
+        std::cerr
+            << "Unexpected transported temperature: "
+            << temperature_new(2, 2)
+            << '\n';
+
+        return 1;
+    }
+
+    // Important: generic scalar transport must NOT
+    // clamp temperature to [0, 1].
+    if (!(temperature_new(2, 2) > 1.0))
+    {
+        std::cerr
+            << "Generic scalar transport incorrectly "
+               "clamped the temperature.\n";
+
+        return 1;
+    }
+
     return 0;
 }
