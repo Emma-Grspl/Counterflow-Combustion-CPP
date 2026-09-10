@@ -152,7 +152,7 @@ int main(
         number_of_steps
     );
 
-    if (argc == 3)
+    if (argc >= 3)
     {
         const std::filesystem::path output_path{
             argv[2]
@@ -181,10 +181,27 @@ int main(
         << simulation.max_temperature()
         << " K\n";
 
+    if (config.prescribed_energy_activation_step.has_value())
+    {
+        std::cout
+            << "Energy activated at reference step: "
+            << config.prescribed_energy_activation_step.value()
+            << '\n';
+    }
+    else if (simulation.steady_state_detected())
+    {
+        std::cout
+            << "Energy activated at detected steady state: step "
+            << simulation.steady_state_step()
+            << " (t = "
+            << simulation.steady_state_time()
+            << " s)\n";
+    }
+
     if (simulation.steady_state_detected())
     {
         std::cout
-            << "Flow steady state: step "
+            << "Detected flow steady state: step "
             << simulation.steady_state_step()
             << " (t = "
             << simulation.steady_state_time()
@@ -193,7 +210,7 @@ int main(
     else
     {
         std::cout
-            << "Flow steady state: not reached\n";
+            << "Detected flow steady state: not reached\n";
     }
 
     return 0;
