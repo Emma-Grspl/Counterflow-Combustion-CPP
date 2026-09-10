@@ -75,7 +75,6 @@ private:
     Field2D pressure_;
 
     Field2D nitrogen_;
-    Field2D nitrogen_next_;
 
     Field2D ch4_;
     Field2D o2_;

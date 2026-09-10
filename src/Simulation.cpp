@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "counterflow/BoundaryConditions.hpp"
-#include "counterflow/Transport.hpp"
 
 namespace counterflow
 {
@@ -46,11 +45,6 @@ Simulation::Simulation(
           0.0
       ),
       nitrogen_(
-          config.nx,
-          config.ny,
-          0.0
-      ),
-      nitrogen_next_(
           config.nx,
           config.ny,
           0.0
@@ -100,17 +94,21 @@ Simulation::Simulation(
         grid_
     );
 
-    initialize_nitrogen_mass_fraction(
-        nitrogen_,
-        grid_
-    );
-
     initialize_reactive_fields(
         ch4_,
         o2_,
         h2o_,
         co2_,
         temperature_,
+        grid_
+    );
+
+    update_nitrogen_from_mass_closure(
+        nitrogen_,
+        ch4_,
+        o2_,
+        h2o_,
+        co2_,
         grid_
     );
 }
@@ -149,31 +147,7 @@ void Simulation::step()
     );
 
     // ========================================================
-    // 2. Nitrogen transport
-    // ========================================================
-
-    advance_species_transport(
-        nitrogen_,
-        u_,
-        v_,
-        nitrogen_next_,
-        grid_,
-        config_.diffusivity,
-        config_.dt()
-    );
-
-    std::swap(
-        nitrogen_,
-        nitrogen_next_
-    );
-
-    apply_nitrogen_boundary_conditions(
-        nitrogen_,
-        grid_
-    );
-
-    // ========================================================
-    // 3. Reactive transport
+    // 2. Reactive transport
     // ========================================================
 
     reactive_transport_.advance(
@@ -186,6 +160,15 @@ void Simulation::step()
         v_,
         grid_,
         true
+    );
+
+    update_nitrogen_from_mass_closure(
+        nitrogen_,
+        ch4_,
+        o2_,
+        h2o_,
+        co2_,
+        grid_
     );
 
     ++step_count_;

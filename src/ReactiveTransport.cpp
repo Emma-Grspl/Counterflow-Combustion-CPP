@@ -85,6 +85,67 @@ void initialize_reactive_fields(
 }
 
 
+
+void update_nitrogen_from_mass_closure(
+    Field2D& nitrogen,
+    const Field2D& ch4,
+    const Field2D& o2,
+    const Field2D& h2o,
+    const Field2D& co2,
+    const Grid2D& grid
+)
+{
+    const bool dimensions_match =
+        nitrogen.nx() == grid.nx &&
+        nitrogen.ny() == grid.ny &&
+        ch4.nx() == grid.nx &&
+        ch4.ny() == grid.ny &&
+        o2.nx() == grid.nx &&
+        o2.ny() == grid.ny &&
+        h2o.nx() == grid.nx &&
+        h2o.ny() == grid.ny &&
+        co2.nx() == grid.nx &&
+        co2.ny() == grid.ny;
+
+    if (!dimensions_match)
+    {
+        throw std::invalid_argument(
+            "Species fields must match the grid."
+        );
+    }
+
+    constexpr double tolerance = 1.0e-10;
+
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            const double reactive_sum =
+                ch4(i, j)
+                + o2(i, j)
+                + h2o(i, j)
+                + co2(i, j);
+
+            if (reactive_sum < -tolerance ||
+                reactive_sum > 1.0 + tolerance)
+            {
+                throw std::runtime_error(
+                    "Reactive mass fractions violate "
+                    "the mixture closure."
+                );
+            }
+
+            nitrogen(i, j) =
+                std::clamp(
+                    1.0 - reactive_sum,
+                    0.0,
+                    1.0
+                );
+        }
+    }
+}
+
+
 void apply_reactive_boundary_conditions(
     Field2D& ch4,
     Field2D& o2,

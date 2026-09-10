@@ -17,6 +17,15 @@ void initialize_reactive_fields(
     const Grid2D& grid
 );
 
+void update_nitrogen_from_mass_closure(
+    Field2D& nitrogen,
+    const Field2D& ch4,
+    const Field2D& o2,
+    const Field2D& h2o,
+    const Field2D& co2,
+    const Grid2D& grid
+);
+
 void apply_reactive_boundary_conditions(
     Field2D& ch4,
     Field2D& o2,
