@@ -57,7 +57,7 @@ public:
         const Field2D& u,
         const Field2D& v,
         const Grid2D& grid,
-        bool enable_heat_release = true
+        bool evolve_temperature = true
     );
 
     [[nodiscard]]

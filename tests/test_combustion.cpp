@@ -20,6 +20,28 @@ int main()
             density
         );
 
+    // Chemical source terms must conserve total mass.
+    const double total_mass_source =
+        rates.ch4
+        + rates.o2
+        + rates.h2o
+        + rates.co2;
+
+    const double source_scale =
+        std::abs(rates.ch4)
+        + std::abs(rates.o2)
+        + std::abs(rates.h2o)
+        + std::abs(rates.co2);
+
+    if (source_scale > 0.0 &&
+        std::abs(total_mass_source) / source_scale > 1.0e-12)
+    {
+        std::cerr
+            << "Chemical source terms do not conserve mass.\n";
+
+        return 1;
+    }
+
     // Reactants must be consumed.
     if (!(rates.ch4 < 0.0))
     {

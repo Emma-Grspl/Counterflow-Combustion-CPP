@@ -360,7 +360,7 @@ void ReactiveTransportStepper::advance(
     const Field2D& u,
     const Field2D& v,
     const Grid2D& grid,
-    bool enable_heat_release
+    bool evolve_temperature
 )
 {
     const bool dimensions_match =
@@ -461,25 +461,31 @@ void ReactiveTransportStepper::advance(
             dt
         );
 
-        advance_scalar_transport(
-            temperature,
-            u,
-            v,
-            temperature_buffer_,
-            grid,
-            diffusivity_,
-            dt
-        );
+        if (evolve_temperature)
+        {
+            advance_scalar_transport(
+                temperature,
+                u,
+                v,
+                temperature_buffer_,
+                grid,
+                diffusivity_,
+                dt
+            );
+        }
 
         // Swap buffers instead of copying complete fields.
         std::swap(ch4, ch4_buffer_);
         std::swap(o2, o2_buffer_);
         std::swap(h2o, h2o_buffer_);
         std::swap(co2, co2_buffer_);
-        std::swap(
-            temperature,
-            temperature_buffer_
-        );
+        if (evolve_temperature)
+        {
+            std::swap(
+                temperature,
+                temperature_buffer_
+            );
+        }
 
         // ----------------------------------------------------
         // 2. Local chemical reaction
@@ -537,7 +543,7 @@ void ReactiveTransportStepper::advance(
                         1.0
                     );
 
-                if (enable_heat_release)
+                if (evolve_temperature)
                 {
                     temperature(i, j) =
                         reacted.temperature;

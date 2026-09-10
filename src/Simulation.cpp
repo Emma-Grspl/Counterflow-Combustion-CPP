@@ -159,7 +159,7 @@ void Simulation::step()
         u_,
         v_,
         grid_,
-        true
+        step_count_ >= 1524
     );
 
     update_nitrogen_from_mass_closure(
