@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
@@ -307,6 +308,139 @@ int main()
     {
         std::cerr
             << "Complete step modified uniform v velocity.\n";
+
+        return 1;
+    }
+
+
+    // ========================================================
+    // Test 4: discrete projection must remove divergence
+    // ========================================================
+
+    counterflow::Field2D projection_u_star(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D projection_v_star(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D projection_rhs(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D projection_pressure(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D projection_u(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    counterflow::Field2D projection_v(
+        grid.nx,
+        grid.ny,
+        0.0
+    );
+
+    // Deliberately divergent velocity field.
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            const std::size_t k =
+                grid.index(i, j);
+
+            const double x =
+                grid.x[k];
+
+            const double y =
+                grid.y[k];
+
+            projection_u_star(i, j) =
+                x * x + 0.4 * y;
+
+            projection_v_star(i, j) =
+                -0.3 * x + y * y;
+        }
+    }
+
+    const double projection_rho = 1.3;
+    const double projection_dt = 0.05;
+
+    counterflow::compute_pressure_rhs(
+        projection_u_star,
+        projection_v_star,
+        projection_rhs,
+        grid,
+        projection_rho,
+        projection_dt
+    );
+
+    counterflow::PressurePoissonSolver
+        projection_solver(grid);
+
+    projection_solver.solve(
+        projection_rhs,
+        projection_pressure
+    );
+
+    counterflow::correct_velocity(
+        projection_u_star,
+        projection_v_star,
+        projection_pressure,
+        projection_u,
+        projection_v,
+        grid,
+        projection_rho,
+        projection_dt
+    );
+
+    double maximum_divergence = 0.0;
+
+    for (std::size_t j = 1;
+         j < grid.ny - 1;
+         ++j)
+    {
+        for (std::size_t i = 1;
+             i < grid.nx - 1;
+             ++i)
+        {
+            const double du_dx =
+                (projection_u(i, j)
+                 - projection_u(i - 1, j))
+                / grid.dx;
+
+            const double dv_dy =
+                (projection_v(i, j)
+                 - projection_v(i, j - 1))
+                / grid.dy;
+
+            maximum_divergence =
+                std::max(
+                    maximum_divergence,
+                    std::abs(du_dx + dv_dy)
+                );
+        }
+    }
+
+    if (maximum_divergence > 1.0e-10)
+    {
+        std::cerr
+            << "Pressure projection left excessive "
+               "discrete divergence: "
+            << maximum_divergence
+            << '\n';
 
         return 1;
     }

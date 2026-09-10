@@ -26,7 +26,14 @@ void compute_pressure_rhs(
     if (!dimensions_match)
     {
         throw std::invalid_argument(
-            "Pressure RHS field dimensions must match the grid."
+            "Pressure RHS fields must match the grid."
+        );
+    }
+
+    if (rho <= 0.0)
+    {
+        throw std::invalid_argument(
+            "Density must be strictly positive."
         );
     }
 
@@ -37,28 +44,45 @@ void compute_pressure_rhs(
         );
     }
 
-    const double inv_2dx =
-        1.0 / (2.0 * grid.dx);
+    // Boundary rows of the Poisson system represent
+    // homogeneous pressure boundary conditions.
+    // Reset the full RHS so stale values cannot survive
+    // from a previous time step.
+    for (std::size_t j = 0; j < grid.ny; ++j)
+    {
+        for (std::size_t i = 0; i < grid.nx; ++i)
+        {
+            rhs(i, j) = 0.0;
+        }
+    }
 
-    const double inv_2dy =
-        1.0 / (2.0 * grid.dy);
+    const double inv_dx =
+        1.0 / grid.dx;
+
+    const double inv_dy =
+        1.0 / grid.dy;
 
     const double pressure_scale =
         rho / dt;
 
+    // Backward divergence D^-.
+    //
+    // Combined with the forward pressure gradient G^+
+    // used in correct_velocity(), D^- G^+ gives exactly
+    // the standard five-point Laplacian.
     for (std::size_t j = 1; j < grid.ny - 1; ++j)
     {
         for (std::size_t i = 1; i < grid.nx - 1; ++i)
         {
             const double du_dx =
-                (u_star(i + 1, j)
+                (u_star(i, j)
                  - u_star(i - 1, j))
-                * inv_2dx;
+                * inv_dx;
 
             const double dv_dy =
-                (v_star(i, j + 1)
+                (v_star(i, j)
                  - v_star(i, j - 1))
-                * inv_2dy;
+                * inv_dy;
 
             rhs(i, j) =
                 pressure_scale

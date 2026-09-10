@@ -166,38 +166,40 @@ void correct_velocity(
     const double pressure_scale =
         dt / rho;
 
-    const double inv_2dx =
-        1.0 / (2.0 * grid.dx);
+    const double inv_dx =
+        1.0 / grid.dx;
 
-    const double inv_2dy =
-        1.0 / (2.0 * grid.dy);
+    const double inv_dy =
+        1.0 / grid.dy;
 
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         for (std::size_t i = 0; i < grid.nx; ++i)
         {
-            const bool boundary =
-                i == 0 ||
+            if (i == 0 ||
                 i == grid.nx - 1 ||
                 j == 0 ||
-                j == grid.ny - 1;
-
-            if (boundary)
+                j == grid.ny - 1)
             {
-                u_new(i, j) = u_star(i, j);
-                v_new(i, j) = v_star(i, j);
+                u_new(i, j) =
+                    u_star(i, j);
+
+                v_new(i, j) =
+                    v_star(i, j);
+
                 continue;
             }
 
+            // Forward pressure gradient G^+.
             const double dp_dx =
                 (pressure(i + 1, j)
-                 - pressure(i - 1, j))
-                * inv_2dx;
+                 - pressure(i, j))
+                * inv_dx;
 
             const double dp_dy =
                 (pressure(i, j + 1)
-                 - pressure(i, j - 1))
-                * inv_2dy;
+                 - pressure(i, j))
+                * inv_dy;
 
             u_new(i, j) =
                 u_star(i, j)
