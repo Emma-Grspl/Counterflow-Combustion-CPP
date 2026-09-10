@@ -1,10 +1,12 @@
 #include <charconv>
 #include <cstddef>
 #include <iostream>
+#include <filesystem>
 #include <string_view>
 
 #include "counterflow/Config.hpp"
 #include "counterflow/Simulation.hpp"
+#include "counterflow/Output.hpp"
 
 namespace
 {
@@ -43,17 +45,17 @@ int main(
 
     std::size_t number_of_steps = 10;
 
-    if (argc > 2)
+    if (argc > 3)
     {
         std::cerr
             << "Usage: "
             << argv[0]
-            << " [number_of_steps|all]\n";
+            << " [number_of_steps|all] [output.csv]\n";
 
         return 1;
     }
 
-    if (argc == 2)
+    if (argc >= 2)
     {
         const std::string_view argument{
             argv[1]
@@ -113,6 +115,23 @@ int main(
     simulation.run(
         number_of_steps
     );
+
+    if (argc == 3)
+    {
+        const std::filesystem::path output_path{
+            argv[2]
+        };
+
+        counterflow::write_simulation_csv(
+            simulation,
+            output_path
+        );
+
+        std::cout
+            << "Output written to: "
+            << output_path
+            << '\n';
+    }
 
     std::cout
         << "Simulation completed.\n"

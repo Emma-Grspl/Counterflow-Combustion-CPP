@@ -27,6 +27,7 @@ add_library(
     src/Combustion.cpp
     src/ReactiveTransport.cpp
     src/Simulation.cpp
+    src/Output.cpp
 )
 
 target_include_directories(
