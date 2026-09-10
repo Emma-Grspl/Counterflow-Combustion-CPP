@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "counterflow/Transport.hpp"
@@ -131,7 +132,12 @@ void update_nitrogen_from_mass_closure(
             {
                 throw std::runtime_error(
                     "Reactive mass fractions violate "
-                    "the mixture closure."
+                    "the mixture closure at (i="
+                    + std::to_string(i)
+                    + ", j="
+                    + std::to_string(j)
+                    + "): sum="
+                    + std::to_string(reactive_sum)
                 );
             }
 
@@ -180,15 +186,19 @@ void apply_reactive_boundary_conditions(
     const std::size_t half =
         grid.nx / 2;
 
-    // Left and right boundaries:
-    // zero normal gradient.
+    // --------------------------------------------------------
+    // Left and right:
+    // homogeneous Neumann boundary conditions.
+    // --------------------------------------------------------
+
     for (std::size_t j = 0; j < grid.ny; ++j)
     {
         ch4(0, j) = ch4(1, j);
         o2(0, j) = o2(1, j);
         h2o(0, j) = h2o(1, j);
         co2(0, j) = co2(1, j);
-        temperature(0, j) = temperature(1, j);
+        temperature(0, j) =
+            temperature(1, j);
 
         ch4(grid.nx - 1, j) =
             ch4(grid.nx - 2, j);
@@ -206,14 +216,25 @@ void apply_reactive_boundary_conditions(
             temperature(grid.nx - 2, j);
     }
 
-    // Bottom and top boundaries:
-    // zero-gradient except at imposed inlets.
+    // --------------------------------------------------------
+    // Bottom and top:
+    // zero-gradient by default.
+    // --------------------------------------------------------
+
     for (std::size_t i = 0; i < grid.nx; ++i)
     {
-        ch4(i, 0) = ch4(i, 1);
-        o2(i, 0) = o2(i, 1);
-        h2o(i, 0) = h2o(i, 1);
-        co2(i, 0) = co2(i, 1);
+        ch4(i, 0) =
+            ch4(i, 1);
+
+        o2(i, 0) =
+            o2(i, 1);
+
+        h2o(i, 0) =
+            h2o(i, 1);
+
+        co2(i, 0) =
+            co2(i, 1);
+
         temperature(i, 0) =
             temperature(i, 1);
 
@@ -232,22 +253,48 @@ void apply_reactive_boundary_conditions(
         temperature(i, grid.ny - 1) =
             temperature(i, grid.ny - 2);
 
-        // Oxygen inlet at the bottom.
+        // ----------------------------------------------------
+        // Fast bottom jet: air
+        //
+        // Y_O2 = 0.21
+        // Y_N2 = 0.79 by mass closure
+        // ----------------------------------------------------
+
         if (i < first_quarter)
         {
+            ch4(i, 0) = 0.0;
             o2(i, 0) = 0.21;
-        }
-
-        // Methane inlet at the top.
-        if (i < first_quarter)
-        {
-            ch4(i, grid.ny - 1) = 1.0;
-        }
-
-        // Cold inlet regions.
-        if (i < half)
-        {
+            h2o(i, 0) = 0.0;
+            co2(i, 0) = 0.0;
             temperature(i, 0) = 300.0;
+
+            // Fast top jet: pure methane.
+            ch4(i, grid.ny - 1) = 1.0;
+            o2(i, grid.ny - 1) = 0.0;
+            h2o(i, grid.ny - 1) = 0.0;
+            co2(i, grid.ny - 1) = 0.0;
+            temperature(i, grid.ny - 1) = 300.0;
+        }
+
+        // ----------------------------------------------------
+        // Slow jets: pure nitrogen.
+        //
+        // All reactive species are zero.
+        // N2 becomes 1 through mass closure.
+        // ----------------------------------------------------
+
+        else if (i < half)
+        {
+            ch4(i, 0) = 0.0;
+            o2(i, 0) = 0.0;
+            h2o(i, 0) = 0.0;
+            co2(i, 0) = 0.0;
+            temperature(i, 0) = 300.0;
+
+            ch4(i, grid.ny - 1) = 0.0;
+            o2(i, grid.ny - 1) = 0.0;
+            h2o(i, grid.ny - 1) = 0.0;
+            co2(i, grid.ny - 1) = 0.0;
             temperature(i, grid.ny - 1) = 300.0;
         }
     }

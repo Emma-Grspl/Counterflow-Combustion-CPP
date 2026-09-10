@@ -246,5 +246,108 @@ int main()
         return 1;
     }
 
+
+    // ========================================================
+    // Complete inlet compositions
+    // ========================================================
+
+    const std::size_t bottom_air_i = 0;
+    const std::size_t slow_n2_i = grid.nx / 4;
+
+    // Bottom fast jet: air.
+    if (!approximately_equal(
+            o2(bottom_air_i, 0),
+            0.21,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            ch4(bottom_air_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            h2o(bottom_air_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            co2(bottom_air_i, 0),
+            0.0,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Bottom air inlet composition is incorrect.\n";
+
+        return 1;
+    }
+
+    // Top fast jet: pure methane.
+    if (!approximately_equal(
+            ch4(0, grid.ny - 1),
+            1.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            o2(0, grid.ny - 1),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            h2o(0, grid.ny - 1),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            co2(0, grid.ny - 1),
+            0.0,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Top methane inlet composition is incorrect.\n";
+
+        return 1;
+    }
+
+    // Slow bottom and top jets: pure nitrogen.
+    // Reactive species must therefore all be zero.
+    if (!approximately_equal(
+            ch4(slow_n2_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            o2(slow_n2_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            h2o(slow_n2_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            co2(slow_n2_i, 0),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            ch4(slow_n2_i, grid.ny - 1),
+            0.0,
+            1.0e-12
+        ) ||
+        !approximately_equal(
+            o2(slow_n2_i, grid.ny - 1),
+            0.0,
+            1.0e-12
+        ))
+    {
+        std::cerr
+            << "Slow nitrogen inlet composition is incorrect.\n";
+
+        return 1;
+    }
+
     return 0;
 }
