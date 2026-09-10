@@ -33,6 +33,15 @@ public:
     double max_temperature() const;
 
     [[nodiscard]]
+    bool steady_state_detected() const;
+
+    [[nodiscard]]
+    std::size_t steady_state_step() const;
+
+    [[nodiscard]]
+    double steady_state_time() const;
+
+    [[nodiscard]]
     const Grid2D& grid() const;
 
     [[nodiscard]]
@@ -84,6 +93,10 @@ private:
 
     NavierStokesStepper navier_stokes_;
     ReactiveTransportStepper reactive_transport_;
+
+    double previous_pressure_sum_;
+    bool steady_state_detected_ = false;
+    std::size_t steady_state_step_ = 0;
 
     std::size_t step_count_ = 0;
     double time_ = 0.0;

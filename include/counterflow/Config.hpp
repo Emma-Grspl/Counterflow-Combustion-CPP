@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 
 namespace counterflow
 {
@@ -24,6 +25,17 @@ struct SimulationConfig
     // Time integration
     double final_time = 0.01; // s
     std::size_t nt = 3000;
+
+    // Flow steady-state detection
+    double steady_state_tolerance = 1.0e-8;
+
+    // Reference reproduction:
+    // if a value is present, activate the energy equation
+    // after this prescribed hydrodynamic step.
+    //
+    // std::nullopt selects automatic steady-state detection.
+    std::optional<std::size_t>
+        prescribed_energy_activation_step = 1524;
 
     [[nodiscard]]
     double dt() const

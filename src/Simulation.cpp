@@ -1,6 +1,7 @@
 #include "counterflow/Simulation.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <utility>
 
@@ -87,6 +88,11 @@ Simulation::Simulation(
           config.diffusivity,
           config.dt(),
           1000.0
+      ),
+      previous_pressure_sum_(
+          static_cast<double>(
+              config.nx * config.ny
+          )
       )
 {
     initialize_vertical_velocity(
@@ -147,6 +153,49 @@ void Simulation::step()
     );
 
     // ========================================================
+    // Flow steady-state detection
+    // ========================================================
+
+    if (!steady_state_detected_)
+    {
+        double pressure_sum = 0.0;
+
+        for (std::size_t j = 0; j < grid_.ny; ++j)
+        {
+            for (std::size_t i = 0; i < grid_.nx; ++i)
+            {
+                pressure_sum +=
+                    pressure_(i, j);
+            }
+        }
+
+        const double denominator =
+            std::abs(pressure_sum);
+
+        if (denominator > 0.0)
+        {
+            const double relative_change =
+                std::abs(
+                    pressure_sum
+                    - previous_pressure_sum_
+                )
+                / denominator;
+
+            if (relative_change
+                < config_.steady_state_tolerance)
+            {
+                steady_state_detected_ = true;
+
+                steady_state_step_ =
+                    step_count_ + 1;
+            }
+        }
+
+        previous_pressure_sum_ =
+            pressure_sum;
+    }
+
+    // ========================================================
     // 2. Reactive transport
     // ========================================================
 
@@ -159,7 +208,15 @@ void Simulation::step()
         u_,
         v_,
         grid_,
-        step_count_ >= 1524
+        config_.prescribed_energy_activation_step.has_value()
+            ? (
+                step_count_ + 1
+                > config_.prescribed_energy_activation_step.value()
+              )
+            : (
+                steady_state_detected_
+                && (step_count_ + 1 > steady_state_step_)
+              )
     );
 
     update_nitrogen_from_mass_closure(
@@ -235,6 +292,27 @@ double Simulation::max_temperature() const
     }
 
     return maximum;
+}
+
+
+
+bool Simulation::steady_state_detected() const
+{
+    return steady_state_detected_;
+}
+
+
+std::size_t Simulation::steady_state_step() const
+{
+    return steady_state_step_;
+}
+
+
+double Simulation::steady_state_time() const
+{
+    return static_cast<double>(
+        steady_state_step_
+    ) * config_.dt();
 }
 
 

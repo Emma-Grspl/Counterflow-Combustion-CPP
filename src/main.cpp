@@ -1,6 +1,7 @@
 #include <charconv>
 #include <cstddef>
 #include <iostream>
+#include <optional>
 #include <filesystem>
 #include <string_view>
 
@@ -41,16 +42,17 @@ int main(
     char* argv[]
 )
 {
-    const counterflow::SimulationConfig config;
+    counterflow::SimulationConfig config;
 
     std::size_t number_of_steps = 10;
 
-    if (argc > 3)
+    if (argc > 4)
     {
         std::cerr
             << "Usage: "
             << argv[0]
-            << " [number_of_steps|all] [output.csv]\n";
+            << " [number_of_steps|all] "
+               "[output.csv] [reference|auto]\n";
 
         return 1;
     }
@@ -75,6 +77,33 @@ int main(
                 << "Invalid number of steps: "
                 << argument
                 << '\n';
+
+            return 1;
+        }
+    }
+
+    if (argc == 4)
+    {
+        const std::string_view mode{
+            argv[3]
+        };
+
+        if (mode == "reference")
+        {
+            config.prescribed_energy_activation_step =
+                1524;
+        }
+        else if (mode == "auto")
+        {
+            config.prescribed_energy_activation_step =
+                std::nullopt;
+        }
+        else
+        {
+            std::cerr
+                << "Invalid activation mode: "
+                << mode
+                << "\nExpected 'reference' or 'auto'.\n";
 
             return 1;
         }
@@ -106,6 +135,13 @@ int main(
         << " s\n"
         << "Requested steps: "
         << number_of_steps
+        << '\n'
+        << "Energy activation: "
+        << (
+            config.prescribed_energy_activation_step.has_value()
+                ? "reference step"
+                : "automatic steady state"
+           )
         << "\n\n";
 
     counterflow::Simulation simulation(
@@ -144,6 +180,21 @@ int main(
         << "Maximum temperature: "
         << simulation.max_temperature()
         << " K\n";
+
+    if (simulation.steady_state_detected())
+    {
+        std::cout
+            << "Flow steady state: step "
+            << simulation.steady_state_step()
+            << " (t = "
+            << simulation.steady_state_time()
+            << " s)\n";
+    }
+    else
+    {
+        std::cout
+            << "Flow steady state: not reached\n";
+    }
 
     return 0;
 }
