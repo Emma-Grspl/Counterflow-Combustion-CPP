@@ -1,0 +1,13 @@
+metric,value,unit
+cpp_full_median,13.549708,s
+cpp_full_mean,13.621400,s
+cpp_full_std,0.176436,s
+python_dense_pressure_median,0.150321,s_per_solve
+cpp_sparse_pressure_median,0.000117075084,s_per_solve
+python_pressure_2999_estimate,450.814,s
+cpp_pressure_2999_estimate,0.351108177,s
+pressure_solver_speedup,1284.0,x
+python_pressure_only_vs_cpp_full,33.27,x
+python_dense_matrix_size,47.684,MiB
+cpp_sparse_matrix_nonzeros,11862,nonzeros
+cpp_sparse_construction_factorization,0.007098042,s

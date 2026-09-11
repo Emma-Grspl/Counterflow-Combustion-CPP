@@ -236,3 +236,19 @@ target_link_libraries(
     PRIVATE
         counterflow_core
 )
+
+
+# ------------------------------------------------------------
+# Pressure-solver microbenchmark
+# ------------------------------------------------------------
+
+add_executable(
+    counterflow_pressure_benchmark
+    benchmark/pressure_benchmark.cpp
+)
+
+target_link_libraries(
+    counterflow_pressure_benchmark
+    PRIVATE
+        counterflow_core
+)
