@@ -29,3 +29,16 @@ results/
 __pycache__/
 *.pyc
 benchmark/cpp_timings.csv
+# Build artifacts
+build-*/
+
+# Generated simulation results
+validation/results/
+
+# Python
+.venv/
+*.py[cod]
+
+# Raw benchmark measurements
+
+# IDE / OS

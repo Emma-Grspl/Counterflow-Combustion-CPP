@@ -1,0 +1,5 @@
+# Python dependencies for validation and analysis utilities.
+# The C++ solver itself does not require Python.
+
+numpy>=2.0,<3.0
+matplotlib>=3.9,<4.0
