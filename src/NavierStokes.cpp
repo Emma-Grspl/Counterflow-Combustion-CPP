@@ -1,4 +1,5 @@
 #include "counterflow/NavierStokes.hpp"
+#include "counterflow/BoundaryConditions.hpp"
 
 #include <stdexcept>
 
@@ -278,6 +279,12 @@ void NavierStokesStepper::advance(
         nu_
     );
 
+    apply_velocity_boundary_conditions(
+        u_star_,
+        v_star_,
+        grid
+    );
+
     compute_pressure_rhs(
         u_star_,
         v_star_,
@@ -301,6 +308,12 @@ void NavierStokesStepper::advance(
         grid,
         rho_,
         dt_
+    );
+
+    apply_velocity_boundary_conditions(
+        u_new,
+        v_new,
+        grid
     );
 }
 

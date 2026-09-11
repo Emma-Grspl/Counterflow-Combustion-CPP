@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "counterflow/Grid.hpp"
+#include "counterflow/BoundaryConditions.hpp"
 #include "counterflow/NavierStokes.hpp"
 
 bool approximately_equal(double a, double b, double tolerance)
@@ -221,95 +222,187 @@ int main()
 
 
     // ========================================================
-    // Test 3: complete fractional step
+    // Test 3: complete fractional step with physical BCs
     // ========================================================
 
-    counterflow::Field2D step_u_old(
-        grid.nx,
-        grid.ny,
-        0.0
-    );
-
-    counterflow::Field2D step_v_old(
-        grid.nx,
-        grid.ny,
-        0.0
-    );
-
-    counterflow::Field2D step_u_new(
-        grid.nx,
-        grid.ny,
-        0.0
-    );
-
-    counterflow::Field2D step_v_new(
-        grid.nx,
-        grid.ny,
-        0.0
-    );
-
-    counterflow::Field2D step_pressure(
-        grid.nx,
-        grid.ny,
-        0.0
-    );
-
-    // Uniform velocity field.
-    //
-    // All spatial derivatives vanish, therefore:
-    //
-    // predictor        -> unchanged
-    // pressure RHS     -> zero
-    // pressure         -> zero
-    // correction       -> unchanged
-
-    for (std::size_t j = 0; j < grid.ny; ++j)
     {
-        for (std::size_t i = 0; i < grid.nx; ++i)
+        const counterflow::Grid2D bc_grid(
+            1.0,
+            1.0,
+            8,
+            5
+        );
+
+        counterflow::Field2D bc_u_old(
+            bc_grid.nx,
+            bc_grid.ny,
+            0.0
+        );
+
+        counterflow::Field2D bc_v_old(
+            bc_grid.nx,
+            bc_grid.ny,
+            0.0
+        );
+
+        counterflow::Field2D bc_u_new(
+            bc_grid.nx,
+            bc_grid.ny,
+            0.0
+        );
+
+        counterflow::Field2D bc_v_new(
+            bc_grid.nx,
+            bc_grid.ny,
+            0.0
+        );
+
+        counterflow::Field2D bc_pressure(
+            bc_grid.nx,
+            bc_grid.ny,
+            0.0
+        );
+
+        counterflow::initialize_vertical_velocity(
+            bc_v_old,
+            bc_grid
+        );
+
+        counterflow::apply_velocity_boundary_conditions(
+            bc_u_old,
+            bc_v_old,
+            bc_grid
+        );
+
+        counterflow::NavierStokesStepper bc_stepper(
+            bc_grid,
+            1.0,       // density
+            0.01,      // kinematic viscosity
+            1.0e-4     // dt
+        );
+
+        bc_stepper.advance(
+            bc_u_old,
+            bc_v_old,
+            bc_u_new,
+            bc_v_new,
+            bc_pressure,
+            bc_grid
+        );
+
+        // Interior values must remain finite.
+        if (
+            !std::isfinite(
+                bc_u_new(3, 2)
+            )
+            ||
+            !std::isfinite(
+                bc_v_new(3, 2)
+            )
+        )
         {
-            step_u_old(i, j) = 1.5;
-            step_v_old(i, j) = -0.5;
+            std::cerr
+                << "Complete step produced "
+                   "non-finite velocity.\n";
+
+            return 1;
         }
-    }
 
-    counterflow::NavierStokesStepper stepper(
-        grid,
-        1.0,
-        0.01,
-        0.1
-    );
+        const std::size_t right =
+            bc_grid.nx - 1;
 
-    stepper.advance(
-        step_u_old,
-        step_v_old,
-        step_u_new,
-        step_v_new,
-        step_pressure,
-        grid
-    );
+        const std::size_t top =
+            bc_grid.ny - 1;
 
-    if (!approximately_equal(
-            step_u_new(2, 2),
-            1.5,
-            1.0e-12
-        ))
-    {
-        std::cerr
-            << "Complete step modified uniform u velocity.\n";
+        // Left: slip wall
+        // u = 0 and dv/dx = 0.
+        if (
+            !approximately_equal(
+                bc_u_new(0, 2),
+                0.0,
+                1.0e-12
+            )
+            ||
+            !approximately_equal(
+                bc_v_new(0, 2),
+                bc_v_new(1, 2),
+                1.0e-12
+            )
+        )
+        {
+            std::cerr
+                << "Complete step violated "
+                   "left slip boundary.\n";
 
-        return 1;
-    }
+            return 1;
+        }
 
-    if (!approximately_equal(
-            step_v_new(2, 2),
-            -0.5,
-            1.0e-12
-        ))
-    {
-        std::cerr
-            << "Complete step modified uniform v velocity.\n";
+        // Right: open outlet
+        // du/dx = dv/dx = 0.
+        if (
+            !approximately_equal(
+                bc_u_new(right, 2),
+                bc_u_new(right - 1, 2),
+                1.0e-12
+            )
+            ||
+            !approximately_equal(
+                bc_v_new(right, 2),
+                bc_v_new(right - 1, 2),
+                1.0e-12
+            )
+        )
+        {
+            std::cerr
+                << "Complete step violated "
+                   "right outlet boundary.\n";
 
-        return 1;
+            return 1;
+        }
+
+        // Horizontal velocity is zero at top/bottom.
+        if (
+            !approximately_equal(
+                bc_u_new(3, 0),
+                0.0,
+                1.0e-12
+            )
+            ||
+            !approximately_equal(
+                bc_u_new(3, top),
+                0.0,
+                1.0e-12
+            )
+        )
+        {
+            std::cerr
+                << "Complete step violated "
+                   "wall horizontal velocity.\n";
+
+            return 1;
+        }
+
+        // Prescribed counterflow jets.
+        if (
+            !approximately_equal(
+                bc_v_new(0, 0),
+                1.0,
+                1.0e-12
+            )
+            ||
+            !approximately_equal(
+                bc_v_new(0, top),
+                -1.0,
+                1.0e-12
+            )
+        )
+        {
+            std::cerr
+                << "Complete step violated "
+                   "counterflow jet boundary.\n";
+
+            return 1;
+        }
     }
 
 

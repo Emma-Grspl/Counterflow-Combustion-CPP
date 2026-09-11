@@ -220,3 +220,19 @@ add_test(
     NAME simulation
     COMMAND test_simulation
 )
+
+
+# ------------------------------------------------------------
+# Convergence-study executable
+# ------------------------------------------------------------
+
+add_executable(
+    counterflow_convergence
+    src/convergence_main.cpp
+)
+
+target_link_libraries(
+    counterflow_convergence
+    PRIVATE
+        counterflow_core
+)
